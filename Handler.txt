@@ -1,0 +1,43 @@
+msg "Make sure to read the instructions and update the dispatcher address and registers! NOTE: This script has only been tested in VMP 3.5.1"
+
+refinit "VMP-Dumper" //start the context so we can draw in the ref window
+
+mov $VMDispatcher, FULLNAME:base  //grab base address of the program from the current instruction pointer
+add $VMDispatcher, 0x2CC6B0
+
+log "VMDispatcher at: {x: $VMDispatcher}" //log the address of the dispatcher
+
+bpd    //DisableBPX
+bphd   //DisableHardwareBreakpoint
+bpmd   //DisableMemoryBreakpoint
+
+bph $VMDispatcher //create VMDispatcher's hardware breakpoint
+bphe $VMDispatcher //enable VMDispatcher's hardware breakpoint
+
+jmp continue_program
+
+check_reference:
+refget $refId //get the reference of the index stored in refId
+cmp $result, 0 //check if the reference exists and then check if its address is the same as the current vm-handler
+je add_reference //current reference doesnt exist, we finished iterating through the ref array so the current vm-handler must be added
+jmp on_reference_exist //reference exists
+
+on_reference_exist:
+cmp $result, [r11+r8*8] //check if the reference address is equal to the current vm-handler
+je continue_program //if equal go to loop, we don't want to continue iterating
+inc $refId //increment the index //this will be executed if the reference addr != current vm-handler
+jmp check_reference //repeat
+
+continue_program:
+erun //run the program to hit the BP
+mov $refId, 0 //this will be executed when BP is hit; set refId to 0
+jmp check_reference
+
+add_reference:
+refadd [r11+r8*8], "OpCode: {rdi}" //add the reference
+jmp continue_program_2 //run the program until bp is hit again
+
+continue_program_2:
+erun //run the program to hit the BP
+mov $refId, 0 //this will be executed when BP is hit; set refId to 0
+jmp check_reference

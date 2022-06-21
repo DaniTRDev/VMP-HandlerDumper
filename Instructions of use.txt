@@ -1,0 +1,45 @@
+First of all you'll need to set the full name of the program (extension included) in this line: 
+"mov $VMDispatcher, FULLNAME:base".
+
+
+After setting the correct name you'll need to locate the dispatcher. I could generate 2 valid signatures for VMP 3.5.1 
+depending on the type of dispatcher that your app has:
+
+
+-Normal JMP: " 48 ?? ?? 01 00 00 00 44 ?? ?? ?? E9"
+This sig should lead to some instructions like this:
+NOTE THAT EVERY REGISTER FROM THIS ASM CODE CAN BE SWAPPED BETWEEN BUILDS
+BUT THE STRUCTURE WILL BE THE SAME
+
+//////////////////////////////////////////////////////////
+sub rsi, 0x1
+movxz r8d, byte ptr ds:[rsi]
+jmp random address
+/////////////////////////////////////////////////////////
+
+If you follow the jump of "random address" you should see something like:
+
+////////////////////////////////////////////////////////
+jmp qword ptr ds:[r11+r8*8]
+////////////////////////////////////////////////////////
+Where [r11+r8*8] holds the address of the vm-handler where the application is going to jump,
+r11 is the handler table and r8 is the current decrypted VM opcode.
+
+-PushRet: "0F ?? ?? 41 ?? ?? ?? C3"
+This sig should lead to some instructions like this:
+NOTE THAT EVERY REGISTER FROM THIS ASM CODE CAN BE SWAPPED BETWEEN BUILDS
+BUT THE STRUCTURE WILL BE THE SAME
+
+/////////////////////////////////////////////////////////
+movxz edi, byte ptr ds:[rsi]
+push qword ptr ds:[r11+rdi*8]
+ret
+/////////////////////////////////////////////////////////
+Where [r11+rdi*8] is the address of the vm-handler where the app is going to jump, r11 is
+the handler table and rdi the current decrypted opcode
+
+After locating the dispatcher you will click in the "jmp qword ptr ds:[r11+r8*8]" or "push qword ptr ds:[r11+rdi*8]", depending on your build and select "copy RVA"
+then put the RVA with a "0x" prefix in "add $VMDispatcher, DISPATCHER RVA". Finally you will need to replace the registers of the script in order to get
+the correct handlers & opcodes.
+
+
