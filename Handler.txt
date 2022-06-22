@@ -34,7 +34,7 @@ mov $refId, 0 //this will be executed when BP is hit; set refId to 0
 jmp check_reference
 
 add_reference:
-refadd [r11+r8*8], "OpCode: {rdi}" //add the reference
+refadd [r11+r8*8], "OpCode: {r8}" //add the reference
 jmp continue_program_2 //run the program until bp is hit again
 
 continue_program_2:
